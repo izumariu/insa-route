@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require_relative "hafas"
+
+args = Struct.new(*%w(from to via cli).map(&:to_sym)).new(nil, nil, nil, true)
+help = nil
+
+OptionParser.new do |opts|
+
+  opts.banner = "USAGE: #{$0} [options]"
+
+  opts.on("-f STATION", "--from STATION", "Route starts at this station (required)") do |arg|
+    args.from = arg
+  end
+
+  opts.on("-t STATION", "--to STATION", "Route ends at this station (required)") do |arg|
+    args.to = arg
+  end
+
+  opts.on("-v STATIONS", "--via STATIONS", "Search routes via these stations, split by ','") do |arg|
+    args.via = arg
+  end
+
+  opts.on("-n", "--no-cli", "Don't accept user input (script mode)") do |arg|
+    args.cli = false
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+
+  help = opts.to_s
+
+end.parse!
+
+if !(args.from && args.to)
+  abort help
+end
+
+client = Hafas::Api.new(args.cli)
+
+args.from = client.search(args.from, :NO_AMBIGUITY)
+args.to = client.search(args.to, :NO_AMBIGUITY)
+
+if args.via
+  args.via = args.via.split(?,).map(&:strip)
+  args.via.each_with_index { |s, i| args.via[i] = client.search(s, :NO_AMBIGUITY) }
+end
+
+puts "FROM: #{args.from.inspect}\n\nTO: #{args.to.inspect}\n\nVIA: #{args.via ? args.via.map(&:inspect).join(?\n) : "<NONE>"}"

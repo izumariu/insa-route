@@ -1,0 +1,17 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    args_parser (0.2.0)
+    faraday (1.0.0)
+      multipart-post (>= 1.2, < 3)
+    multipart-post (2.1.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  args_parser (~> 0.2.0)!
+  faraday (~> 1.0)!
+
+BUNDLED WITH
+   2.1.4
