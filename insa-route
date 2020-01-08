@@ -6,34 +6,47 @@ require_relative "hafas"
 args = Struct.new(*%w(from to via cli).map(&:to_sym)).new(nil, nil, nil, true)
 help = nil
 
-OptionParser.new do |opts|
+begin
 
-  opts.banner = "USAGE: #{$0} [options]"
+  OptionParser.new do |opts|
 
-  opts.on("-f STATION", "--from STATION", "Route starts at this station (required)") do |arg|
-    args.from = arg
-  end
+    opts.banner = "USAGE: #{$0} [options]"
 
-  opts.on("-t STATION", "--to STATION", "Route ends at this station (required)") do |arg|
-    args.to = arg
-  end
+    opts.on("-f STATION", "--from STATION", "Route starts at this station (required)") do |arg|
+      arg.match(/[A-Za-z]/) || abort("(FROM) Please enter an actual station name.")
+      args.from = arg
+    end
 
-  opts.on("-v STATIONS", "--via STATIONS", "Search routes via these stations, split by ','") do |arg|
-    args.via = arg
-  end
+    opts.on("-t STATION", "--to STATION", "Route ends at this station (required)") do |arg|
+      arg.match(/[A-Za-z]/) || abort("(TO) Please enter an actual station name.")
+      args.to = arg
+    end
 
-  opts.on("-n", "--no-cli", "Don't accept user input (script mode)") do |arg|
-    args.cli = false
-  end
+    opts.on("-v STATIONS", "--via STATIONS", "Search routes via these stations, split by ','") do |arg|
+      arg.match(/[A-Za-z]/) || abort("(VIA) Please enter an actual station name.")
+      args.via = arg
+    end
 
-  opts.on("-h", "--help", "Prints this help") do
-    puts opts
-    exit
-  end
+    opts.on("-n", "--no-cli", "Don't accept user input (script mode)") do |arg|
+      args.cli = false
+    end
 
-  help = opts.to_s
+    opts.on("-h", "--help", "Prints this help") do
+      puts opts
+      exit
+    end
 
-end.parse!
+    help = opts.to_s
+
+  end.parse!
+
+rescue OptionParser::MissingArgument
+
+  abort help
+
+end
+
+ARGV.clear
 
 if !(args.from && args.to)
   abort help
