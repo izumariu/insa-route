@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "optparse"
+require "time"
 require_relative "hafas"
 
 args = Struct.new(*%w(from to via cli).map(&:to_sym)).new(nil, nil, nil, true)
@@ -12,17 +13,18 @@ begin
 
     opts.banner = "USAGE: #{$0} [options]"
 
-    opts.on("-f STATION", "--from STATION", "Route starts at this station (required)") do |arg|
+    opts.on("-f STATION", "--from STATION", "Departure station (required)") do |arg|
       arg.match(/[A-Za-z]/) || abort("(FROM) Please enter an actual station name.")
       args.from = arg
     end
 
-    opts.on("-t STATION", "--to STATION", "Route ends at this station (required)") do |arg|
+    opts.on("-t STATION", "--to STATION", "Arrival station (required)") do |arg|
       arg.match(/[A-Za-z]/) || abort("(TO) Please enter an actual station name.")
       args.to = arg
     end
 
-    opts.on("-v STATIONS", "--via STATIONS", "Search routes via these stations, split by ','") do |arg|
+    opts.on("-v STATIONS", "--via STATIONS", "Via these station(s), split by ','") do |arg|
+      abort "VIA still has a nasty bug. Please do not use it."
       arg.match(/[A-Za-z]/) || abort("(VIA) Please enter an actual station name.")
       args.via = arg
     end
@@ -62,4 +64,33 @@ if args.via
   args.via.each_with_index { |s, i| args.via[i] = client.search(s, :NO_AMBIGUITY) }
 end
 
-puts "FROM: #{args.from.inspect}\n\nTO: #{args.to.inspect}\n\nVIA: #{args.via ? args.via.map(&:inspect).join(?\n) : "<NONE>"}"
+if args.cli
+  puts
+end
+
+last_conn_date = nil
+
+days = %w(Sun Mon Tue Wed Thu Fri Sat)
+
+routes = client.routes(args.from, args.to, via: args.via)
+
+routes.each_with_index do |conn, i|
+
+  time = Time.parse(conn.date)
+
+  if conn.date != last_conn_date
+    last_conn_date = conn.date
+    puts time.strftime("%a %b %-d %Y").underline(?=)
+    puts ?\n
+  end
+
+  puts "Connection ##{i+1}".underline(?-)
+  puts
+  puts "#{conn.dep["dTimeS"][0,2]}:#{conn.dep["dTimeS"][2,2]} => #{conn.arr["aTimeS"][0,2]}:#{conn.arr["aTimeS"][2,2]} | #{conn.dur[0,2].to_i}h#{conn.dur[2,2]}m"
+  puts
+
+  puts conn.prettify
+
+  i<routes.length-1&&puts
+
+end
